@@ -71,7 +71,7 @@ if DEFINED APPVEYOR (
     :: Change MSVC_VERSION to 12 to use VS 2013
     if NOT DEFINED MSVC_VERSION set MSVC_VERSION=14
     :: Change to 1 to use Ninja generator (builds much faster)
-    if NOT DEFINED WITH_NINJA set WITH_NINJA=1
+    if NOT DEFINED WITH_NINJA set WITH_NINJA=0
     :: Change to 1 to build caffe without CUDA support
     if NOT DEFINED CPU_ONLY set CPU_ONLY=0
     :: Change to generate CUDA code for one of the following GPU architectures
@@ -88,7 +88,7 @@ if DEFINED APPVEYOR (
     :: Change these options for your needs.
     if NOT DEFINED BUILD_PYTHON set BUILD_PYTHON=1
     if NOT DEFINED BUILD_PYTHON_LAYER set BUILD_PYTHON_LAYER=1
-    if NOT DEFINED BUILD_MATLAB set BUILD_MATLAB=0
+    if NOT DEFINED BUILD_MATLAB set BUILD_MATLAB=1
     :: If python is on your path leave this alone
     if NOT DEFINED PYTHON_EXE set PYTHON_EXE=python
     :: Run the tests

@@ -12,7 +12,7 @@ $DATA = "$CaffeRoot\data\mnist"
 if("$BuildDir" -eq "") {
   $BuildDir = "$CaffeRoot\build"
 }
-$BUILD = "$BuildDir\examples\mnist"
+$BUILD = "$BuildDir\examples\mnist\Release"
 
 $BACKEND = "lmdb"
 
