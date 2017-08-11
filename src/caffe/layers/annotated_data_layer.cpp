@@ -17,7 +17,10 @@ namespace caffe {
 template <typename Dtype>
 AnnotatedDataLayer<Dtype>::AnnotatedDataLayer(const LayerParameter& param)
   : BasePrefetchingDataLayer<Dtype>(param),
-    reader_(param) {
+    offset_() {
+  db_.reset(db::GetDB(param.data_param().backend()));
+  db_->Open(param.data_param().source(), db::READ);
+  cursor_.reset(db_->NewCursor());
 }
 
 template <typename Dtype>
@@ -47,7 +50,8 @@ void AnnotatedDataLayer<Dtype>::DataLayerSetUp(
   }
 
   // Read a data point, and use it to initialize the top blob.
-  AnnotatedDatum& anno_datum = *(reader_.full().peek());
+  AnnotatedDatum anno_datum;
+  anno_datum.ParseFromString(cursor_->value());
 
   // Use data_transformer to infer the expected blob shape from anno_datum.
   vector<int> top_shape =
@@ -56,8 +60,8 @@ void AnnotatedDataLayer<Dtype>::DataLayerSetUp(
   // Reshape top[0] and prefetch_data according to the batch_size.
   top_shape[0] = batch_size;
   top[0]->Reshape(top_shape);
-  for (int i = 0; i < this->PREFETCH_COUNT; ++i) {
-    this->prefetch_[i].data_.Reshape(top_shape);
+  for (int i = 0; i < this->prefetch_.size(); ++i) {
+    this->prefetch_[i]->data_.Reshape(top_shape);
   }
   LOG(INFO) << "output data size: " << top[0]->num() << ","
       << top[0]->channels() << "," << top[0]->height() << ","
@@ -101,10 +105,31 @@ void AnnotatedDataLayer<Dtype>::DataLayerSetUp(
       label_shape[0] = batch_size;
     }
     top[1]->Reshape(label_shape);
-    for (int i = 0; i < this->PREFETCH_COUNT; ++i) {
-      this->prefetch_[i].label_.Reshape(label_shape);
+    for (int i = 0; i < this->prefetch_.size(); ++i) {
+      this->prefetch_[i]->label_.Reshape(label_shape);
     }
   }
+}
+
+template <typename Dtype>
+bool AnnotatedDataLayer<Dtype>::Skip() {
+  int size = Caffe::solver_count();
+  int rank = Caffe::solver_rank();
+  bool keep = (offset_ % size) == rank ||
+              // In test mode, only rank 0 runs, so avoid skipping
+              this->layer_param_.phase() == TEST;
+  return !keep;
+}
+
+template<typename Dtype>
+void AnnotatedDataLayer<Dtype>::Next() {
+  cursor_->Next();
+  if (!cursor_->valid()) {
+    LOG_IF(INFO, Caffe::root_solver())
+        << "Restarting data prefetching from start.";
+    cursor_->SeekToFirst();
+  }
+  offset_++;
 }
 
 // This function is called on prefetch thread
@@ -117,28 +142,15 @@ void AnnotatedDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   CPUTimer timer;
   CHECK(batch->data_.count());
   CHECK(this->transformed_data_.count());
-
-  // Reshape according to the first anno_datum of each batch
-  // on single input batches allows for inputs of varying dimension.
+  
   const int batch_size = this->layer_param_.data_param().batch_size();
   const AnnotatedDataParameter& anno_data_param =
       this->layer_param_.annotated_data_param();
   const TransformationParameter& transform_param =
     this->layer_param_.transform_param();
-  AnnotatedDatum& anno_datum = *(reader_.full().peek());
-  // Use data_transformer to infer the expected blob shape from anno_datum.
-  vector<int> top_shape =
-      this->data_transformer_->InferBlobShape(anno_datum.datum());
-  this->transformed_data_.Reshape(top_shape);
-  // Reshape batch according to the batch_size.
-  top_shape[0] = batch_size;
-  batch->data_.Reshape(top_shape);
-
-  Dtype* top_data = batch->data_.mutable_cpu_data();
-  Dtype* top_label = NULL;  // suppress warnings about uninitialized variables
-  if (this->output_labels_ && !has_anno_type_) {
-    top_label = batch->label_.mutable_cpu_data();
-  }
+  
+  AnnotatedDatum anno_datum;
+  vector<int> top_shape;
 
   // Store transformed annotation.
   map<int, vector<AnnotationGroup> > all_anno;
@@ -146,10 +158,23 @@ void AnnotatedDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
 
   for (int item_id = 0; item_id < batch_size; ++item_id) {
     timer.Start();
-    // get a anno_datum
-    AnnotatedDatum& anno_datum = *(reader_.full().pop("Waiting for data"));
+    while(Skip()) {
+      Next();
+    }
+    anno_datum.ParseFromString(cursor_->value());
     read_time += timer.MicroSeconds();
-    timer.Start();
+    if (item_id == 0) {
+      // Reshape according to the first anno_datum of each batch
+      // on single input batches allows for inputs of varying dimension.
+      // Use data_transformer to infer the expected blob shape from datum.
+      top_shape = 
+        this->data_transformer_->InferBlobShape(anno_datum.datum());
+      this->transformed_data_.Reshape(top_shape);
+      // Reshape batch according to the batch_size.
+      top_shape[0] = batch_size;
+      batch->data_.Reshape(top_shape);
+    }
+
     AnnotatedDatum distort_datum;
     AnnotatedDatum* expand_datum = NULL;
     if (transform_param.has_distort_param()) {
@@ -199,7 +224,6 @@ void AnnotatedDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
           ResizeParameter_Resize_mode_FIT_SMALL_SIZE) {
         this->transformed_data_.Reshape(shape);
         batch->data_.Reshape(shape);
-        top_data = batch->data_.mutable_cpu_data();
       } else {
         CHECK(std::equal(top_shape.begin() + 1, top_shape.begin() + 4,
               shape.begin() + 1));
@@ -209,7 +233,9 @@ void AnnotatedDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
             shape.begin() + 1));
     }
     // Apply data transformations (mirror, scale, crop...)
+    timer.Start();
     int offset = batch->data_.offset(item_id);
+    Dtype* top_data = batch->data_.mutable_cpu_data();
     this->transformed_data_.set_cpu_data(top_data + offset);
     vector<AnnotationGroup> transformed_anno_vec;
     if (this->output_labels_) {
@@ -241,6 +267,7 @@ void AnnotatedDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
                                            &(this->transformed_data_));
         // Otherwise, store the label from datum.
         CHECK(sampled_datum->datum().has_label()) << "Cannot find any label.";
+        Dtype* top_label = batch->label_.mutable_cpu_data();
         top_label[item_id] = sampled_datum->datum().label();
       }
     } else {
@@ -255,8 +282,7 @@ void AnnotatedDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
       delete expand_datum;
     }
     trans_time += timer.MicroSeconds();
-
-    reader_.free().push(const_cast<AnnotatedDatum*>(&anno_datum));
+    Next();
   }
 
   // Store "rich" annotation if needed.
@@ -275,7 +301,7 @@ void AnnotatedDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
         // Reshape the label and store the annotation.
         label_shape[2] = num_bboxes;
         batch->label_.Reshape(label_shape);
-        top_label = batch->label_.mutable_cpu_data();
+        Dtype* top_label = batch->label_.mutable_cpu_data();
         int idx = 0;
         for (int item_id = 0; item_id < batch_size; ++item_id) {
           const vector<AnnotationGroup>& anno_vec = all_anno[item_id];
