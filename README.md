@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Windows Caffe
 
 **This is an experimental, communtity based branch led by Guillaume Dumont (@willyd). It is a work-in-progress.**
@@ -128,7 +127,6 @@ Should you encounter any error please post the output of the above commands by r
 ## Further Details
 
 Refer to the BVLC/caffe master branch README for all other details such as license, citation, and so on.
-=======
 # SSD: Single Shot MultiBox Detector
 
 [![Build Status](https://travis-ci.org/weiliu89/caffe.svg?branch=ssd)](https://travis-ci.org/weiliu89/caffe)
@@ -272,4 +270,3 @@ We have provided the latest models that are trained from different datasets. To 
    * trainval1: [SSD300*](https://drive.google.com/open?id=0BzKzrI_SkD1_a2NKQ2d1d043VXM), [SSD500](https://drive.google.com/open?id=0BzKzrI_SkD1_X2ZCLVgwLTgzaTQ)
 
 <sup>[1]</sup>We use [`examples/convert_model.ipynb`](https://github.com/weiliu89/caffe/blob/ssd/examples/convert_model.ipynb) to extract a VOC model from a pretrained COCO model.
->>>>>>> SSD/ssd
