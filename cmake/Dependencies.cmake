@@ -5,8 +5,7 @@ set(Caffe_DEFINITIONS "")
 set(Caffe_COMPILE_OPTIONS "")
 
 # ---[ Boost
-<<<<<<< HEAD
-find_package(Boost 1.54 REQUIRED COMPONENTS system thread filesystem)
+find_package(Boost 1.54 REQUIRED COMPONENTS system thread filesystem regex)
 list(APPEND Caffe_INCLUDE_DIRS PUBLIC ${Boost_INCLUDE_DIRS})
 list(APPEND Caffe_DEFINITIONS PUBLIC -DBOOST_ALL_NO_LIB)
 list(APPEND Caffe_LINKER_LIBS PUBLIC ${Boost_LIBRARIES})
@@ -15,12 +14,6 @@ if(DEFINED MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 18.0.40629.0)
   # Required for VS 2013 Update 4 or earlier.
   list(APPEND Caffe_DEFINITIONS PUBLIC -DBOOST_NO_CXX11_TEMPLATE_ALIASES)
 endif()
-=======
-find_package(Boost 1.46 REQUIRED COMPONENTS system thread filesystem regex)
-include_directories(SYSTEM ${Boost_INCLUDE_DIR})
-list(APPEND Caffe_LINKER_LIBS ${Boost_LIBRARIES})
-
->>>>>>> SSD/ssd
 # ---[ Threads
 find_package(Threads REQUIRED)
 list(APPEND Caffe_LINKER_LIBS PRIVATE ${CMAKE_THREAD_LIBS_INIT})

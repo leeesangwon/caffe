@@ -54,7 +54,6 @@ inline void MakeTempFilename(string* temp_filename) {
     (temp_files_subpath/caffe::format_int(next_temp_file++, 9)).string();
 }
 
-<<<<<<< HEAD
 #ifdef _MSC_VER
 
 inline void RemoveCaffeTempDir() {
@@ -70,7 +69,6 @@ inline void RemoveCaffeTempDir() {
 
 #endif
 
-=======
 inline void GetTempDirname(string* temp_dirname) {
   temp_dirname->clear();
   const path& model =
@@ -103,7 +101,6 @@ inline void GetTempFilename(string* temp_filename) {
     (temp_files_subpath/caffe::format_int(next_temp_file++, 9)).string();
 }
 
->>>>>>> SSD/ssd
 bool ReadProtoFromTextFile(const char* filename, Message* proto);
 
 inline bool ReadProtoFromTextFile(const string& filename, Message* proto) {
