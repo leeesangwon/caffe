@@ -275,12 +275,12 @@ We have provided the latest models that are trained from different datasets. To 
 
 [참고](\httpdtmoodie.blogspot.kr201609getting-caffe-running-on-windows-with.htmlm=0)
 
-1. [windows branch](\https://github.com/BVLC/tree/windows)와 [ssd branch](\https://github.com/weiliu89/caffe)를 `merge`하였다.
+1. [windows branch](https://github.com/BVLC/tree/windows)와 [ssd branch](https://github.com/weiliu89/caffe)를 `merge`하였다.
 
 2. `boost::regex` 부분이 충돌을 일으켜 ssd에서 추가된 *detection_output_layer.cpp*, *detection_output_layer.cu*, *detection_output_layer.hpp* 파일에서 `boost::regex`를 사용한 `COCO Dataset` 부분과 헤더를 주석처리하였다.
 
 3. *bbox_util.cu* 파일에서 *caffe.ph.h* 파일 오류가 생성  
-~~*bbox_util.cu*에서 `thrust::sort_by_key`부분과 `thrust`헤더 주석처리 [이 글 참고함](\http://blog.csdn.net/gxb0505/article/details/73702451)  
+~~*bbox_util.cu*에서 `thrust::sort_by_key`부분과 `thrust`헤더 주석처리 [이 글 참고함](http://blog.csdn.net/gxb0505/article/details/73702451)  
 하지만 알고리즘 상에서 sorting하는 부분은 필요하므로 보다 근본적인 해결 필요~~  
 *caffe.pb.h*를 *thrust/functional.h*, *thrust/sort.h*보다 먼저 선언하도록 수정
 
@@ -303,7 +303,7 @@ We have provided the latest models that are trained from different datasets. To 
         ...
 
 4. *annotated_data_layer.cpp* 파일에서 *base_data_layer.hpp*에 선언되어있던 `PREFETCH_COUNT` 변수와 `prefetch_`를 사용  
-    *base_data_layer.hpp*에서 multi-GPU 지원을 NCCL에 맡기기 위해 아래와 같이 수정됨 [commit 3ba20549](\https://github.com/BVLC/caffe/commit/3ba20549b7f49a76cd023d19f781a6891b2c2122)
+    *base_data_layer.hpp*에서 multi-GPU 지원을 NCCL에 맡기기 위해 아래와 같이 수정됨 [commit 3ba20549](https://github.com/BVLC/caffe/commit/3ba20549b7f49a76cd023d19f781a6891b2c2122)
     - `prefetch_`는 `commit 3ba20549`에서 `vector<shared_ptr<Batch<Dtype> > >`로 변경
     - `PREFETCH_COUNT`변수는 다음 `commit`인 `commit 5f28eb11`에서 제거됨
     
@@ -322,7 +322,7 @@ We have provided the latest models that are trained from different datasets. To 
     *video_data_layer.cpp*에도 같은 문제가 있어 수정함
 
 5. *data_layer.hpp* 37줄에서 error 발생  
-    ssd코드는 DataReader를 사용하는데 DataReader는 multi-GpU 지원을 NCCL로 바꾸면서 제거됨 [commit 3ba20549](\https://github.com/BVLC/caffe/commit/3ba20549b7f49a76cd023d19f781a6891b2c2122)  
+    ssd코드는 DataReader를 사용하는데 DataReader는 multi-GpU 지원을 NCCL로 바꾸면서 제거됨 [commit 3ba20549](https://github.com/BVLC/caffe/commit/3ba20549b7f49a76cd023d19f781a6891b2c2122)  
     `merge` 과정에서 ssd로 인해 추가된 부분으로 필요하지 않으므로 제거한다.  
 
     ~~**Todo** *annotated_data_layer*에서 아직 DataReader를 사용하고 있다. 이후 수정 필요~~
@@ -338,7 +338,7 @@ We have provided the latest models that are trained from different datasets. To 
     *blocking_queue.cpp*에서 자체 병렬처리와 관련된 부분 모두 제거
 
 7. *blocking_queue.cpp*에서 `P2PSync` `class`를 사용  
-    `P2PSync`는 multi-GpU 지원을 NCCL로 바꾸면서 제거됨 [commit 3ba20549](\https://github.com/BVLC/caffe/commit/3ba20549b7f49a76cd023d19f781a6891b2c2122)  
+    `P2PSync`는 multi-GpU 지원을 NCCL로 바꾸면서 제거됨 [commit 3ba20549](https://github.com/BVLC/caffe/commit/3ba20549b7f49a76cd023d19f781a6891b2c2122)  
     ~~해당 `class`를 다시 선언해줌~~
 
     ~~**Todo** 병렬처리를 NCCL로 바꾸었기 때문에 이 부분을 dependency 확인 이후 제거해야한다.~~
