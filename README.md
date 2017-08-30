@@ -273,9 +273,9 @@ We have provided the latest models that are trained from different datasets. To 
 
 # build 과정에서 생기는 충돌 제거 기록
 
-[참고](\httpdtmoodie.blogspot.kr201609getting-caffe-running-on-windows-with.htmlm=0)
+[참고](http://dtmoodie.blogspot.kr/2016/09/getting-caffe-running-on-windows-with.html)
 
-1. [windows branch](https://github.com/BVLC/tree/windows)와 [ssd branch](https://github.com/weiliu89/caffe)를 `merge`하였다.
+1. [windows branch](https://github.com/BVLC/caffe/tree/windows)와 [ssd branch](https://github.com/weiliu89/caffe/tree/ssd)를 `merge`하였다.
 
 2. `boost::regex` 부분이 충돌을 일으켜 ssd에서 추가된 *detection_output_layer.cpp*, *detection_output_layer.cu*, *detection_output_layer.hpp* 파일에서 `boost::regex`를 사용한 `COCO Dataset` 부분과 헤더를 주석처리하였다.
 
